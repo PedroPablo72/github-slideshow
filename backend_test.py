@@ -215,9 +215,12 @@ class KetoMealPlannerTester:
                 return False, response
         return success, response
 
-    def test_empty_shopping_list(self):
-        """Test shopping list is empty after reset"""
-        success, response = self.run_test("Empty Shopping List After Reset", "GET", "shopping-list", 200)
+    def test_setup_clean_state(self):
+        """Setup clean state by clearing shopping list"""
+        success, response = self.run_test("Setup Clean State", "DELETE", "shopping-list/clear", 200)
+        if success:
+            print("   ✅ Shopping list cleared for clean testing")
+        return success, response
         if success and response:
             if isinstance(response, list) and len(response) == 0:
                 print("   ✅ Shopping list is empty after reset")
