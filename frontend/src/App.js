@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import "@/App.css";
 import axios from "axios";
 import { Toaster, toast } from "sonner";
-import { Sun, Utensils, Moon, ShoppingCart, Download, RotateCcw, X, Plus, Loader2, FileJson, FileSpreadsheet } from "lucide-react";
+import { Sun, Utensils, Moon, ShoppingCart, Download, RotateCcw, X, Plus, Loader2, FileJson, FileSpreadsheet, ShoppingBag, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,7 +24,7 @@ const MEAL_TYPES = [
 ];
 
 // Editable Cell Component
-const EditableCell = ({ day, mealType, meal, onSave, onDelete }) => {
+const EditableCell = ({ day, mealType, meal, onSave, onDelete, onAddToList }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [mealName, setMealName] = useState(meal?.name || "");
   const [ingredientsText, setIngredientsText] = useState(meal?.ingredients?.join(", ") || "");
@@ -44,7 +45,6 @@ const EditableCell = ({ day, mealType, meal, onSave, onDelete }) => {
   const handleSave = async () => {
     if (!mealName.trim()) {
       if (meal) {
-        // Delete if name cleared on existing meal
         await handleDelete();
       } else {
         setIsEditing(false);
@@ -79,6 +79,13 @@ const EditableCell = ({ day, mealType, meal, onSave, onDelete }) => {
       console.error("Error deleting:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAddToList = (e) => {
+    e.stopPropagation();
+    if (meal?.ingredients?.length > 0) {
+      onAddToList(meal.ingredients);
     }
   };
 
@@ -162,32 +169,51 @@ const EditableCell = ({ day, mealType, meal, onSave, onDelete }) => {
   return (
     <div
       data-testid={`cell-${day}-${mealType}`}
-      onClick={() => setIsEditing(true)}
-      className={`p-2 rounded-lg cursor-pointer transition-all min-h-[80px] ${
+      className={`p-2 rounded-lg transition-all min-h-[80px] relative group ${
         meal
           ? "bg-white border border-border/50 hover:border-primary/30 hover:shadow-sm"
-          : "border-2 border-dashed border-border/50 hover:border-primary/30 hover:bg-primary/5"
+          : "border-2 border-dashed border-border/50 hover:border-primary/30 hover:bg-primary/5 cursor-pointer"
       }`}
+      onClick={() => !meal && setIsEditing(true)}
     >
       {meal ? (
         <div>
-          <div className="flex items-start gap-1.5 mb-1">
-            <MealIcon className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
-            <span className="font-medium text-sm text-foreground line-clamp-2">{meal.name}</span>
-          </div>
-          {meal.ingredients?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {meal.ingredients.slice(0, 4).map((ing, i) => (
-                <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 bg-accent/30 border-0">
-                  {ing}
-                </Badge>
-              ))}
-              {meal.ingredients.length > 4 && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-muted border-0">
-                  +{meal.ingredients.length - 4}
-                </Badge>
-              )}
+          <div 
+            className="cursor-pointer"
+            onClick={() => setIsEditing(true)}
+          >
+            <div className="flex items-start gap-1.5 mb-1">
+              <MealIcon className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+              <span className="font-medium text-sm text-foreground line-clamp-2 pr-6">{meal.name}</span>
             </div>
+            {meal.ingredients?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {meal.ingredients.slice(0, 3).map((ing, i) => (
+                  <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 bg-accent/30 border-0">
+                    {ing}
+                  </Badge>
+                ))}
+                {meal.ingredients.length > 3 && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-muted border-0">
+                    +{meal.ingredients.length - 3}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Add to shopping list button */}
+          {meal.ingredients?.length > 0 && (
+            <Button
+              data-testid={`add-to-list-${day}-${mealType}`}
+              size="sm"
+              variant="ghost"
+              onClick={handleAddToList}
+              className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-primary/10 hover:bg-primary/20 rounded-full"
+              title="Añadir a lista de compra"
+            >
+              <ShoppingBag className="w-3 h-3 text-primary" />
+            </Button>
           )}
         </div>
       ) : (
@@ -230,7 +256,8 @@ function App() {
 
   useEffect(() => {
     fetchWeeklyPlan();
-  }, [fetchWeeklyPlan]);
+    fetchShoppingList();
+  }, [fetchWeeklyPlan, fetchShoppingList]);
 
   useEffect(() => {
     if (showShoppingList) {
@@ -273,6 +300,49 @@ function App() {
       console.error("Error deleting meal:", error);
       toast.error("Error al eliminar");
       throw error;
+    }
+  };
+
+  const addToShoppingList = async (ingredients) => {
+    try {
+      await axios.post(`${API}/shopping-list/add`, { ingredients });
+      toast.success(`${ingredients.length} ingrediente(s) añadido(s) a la lista`);
+      fetchShoppingList();
+    } catch (error) {
+      console.error("Error adding to list:", error);
+      toast.error("Error al añadir a la lista");
+    }
+  };
+
+  const toggleShoppingItem = async (name) => {
+    try {
+      await axios.put(`${API}/shopping-list/toggle`, null, { params: { name } });
+      fetchShoppingList();
+    } catch (error) {
+      console.error("Error toggling item:", error);
+    }
+  };
+
+  const removeShoppingItem = async (name) => {
+    try {
+      await axios.delete(`${API}/shopping-list/item`, { params: { name } });
+      toast.success("Ingrediente eliminado");
+      fetchShoppingList();
+    } catch (error) {
+      console.error("Error removing item:", error);
+      toast.error("Error al eliminar");
+    }
+  };
+
+  const clearShoppingList = async () => {
+    if (!window.confirm("¿Vaciar toda la lista de compra?")) return;
+    try {
+      await axios.delete(`${API}/shopping-list/clear`);
+      toast.success("Lista vaciada");
+      fetchShoppingList();
+    } catch (error) {
+      console.error("Error clearing list:", error);
+      toast.error("Error al vaciar la lista");
     }
   };
 
@@ -328,6 +398,8 @@ function App() {
       toast.error("Error al exportar");
     }
   };
+
+  const shoppingListCount = shoppingList.filter(item => !item.checked).length;
 
   if (loading) {
     return (
@@ -404,10 +476,15 @@ function App() {
               <Button
                 data-testid="shopping-list-btn"
                 onClick={() => setShowShoppingList(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 relative"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Lista de Compra</span>
+                {shoppingListCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {shoppingListCount}
+                  </span>
+                )}
               </Button>
             </div>
           </div>
@@ -422,7 +499,7 @@ function App() {
             Tu Plan Semanal
           </h2>
           <p className="text-muted-foreground text-sm">
-            Haz click en cualquier celda para editar directamente
+            Haz click en cualquier celda para editar · Usa el icono <ShoppingBag className="w-3 h-3 inline" /> para añadir ingredientes a la lista
           </p>
         </div>
 
@@ -435,7 +512,7 @@ function App() {
                   <th className="p-3 text-left text-xs font-bold uppercase tracking-widest text-primary border-b border-border/30 min-w-[80px]">
                     Comida
                   </th>
-                  {DAYS.map((day, idx) => (
+                  {DAYS.map((day) => (
                     <th
                       key={day}
                       className="p-3 text-center text-xs font-bold uppercase tracking-widest text-primary border-b border-border/30 min-w-[140px]"
@@ -465,6 +542,7 @@ function App() {
                           meal={getMealForSlot(dayIndex, key)}
                           onSave={saveMeal}
                           onDelete={deleteMeal}
+                          onAddToList={addToShoppingList}
                         />
                       </td>
                     ))}
@@ -477,7 +555,7 @@ function App() {
 
         {/* Instructions */}
         <div className="mt-4 text-center text-xs text-muted-foreground">
-          <p>💡 Pulsa <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Enter</kbd> para guardar · <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Esc</kbd> para cancelar</p>
+          <p>💡 <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Enter</kbd> para guardar · <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Esc</kbd> para cancelar · Hover sobre comida para añadir a lista</p>
         </div>
       </main>
 
@@ -488,9 +566,14 @@ function App() {
             <DialogTitle className="text-xl flex items-center gap-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
               <ShoppingCart className="w-5 h-5 text-primary" />
               Lista de Compra
+              {shoppingList.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {shoppingList.filter(i => !i.checked).length} pendientes
+                </Badge>
+              )}
             </DialogTitle>
             <DialogDescription>
-              Ingredientes de todas tus comidas planificadas
+              Marca los ingredientes que ya tienes o has comprado
             </DialogDescription>
           </DialogHeader>
 
@@ -501,15 +584,33 @@ function App() {
                   <div
                     key={index}
                     data-testid={`shopping-item-${index}`}
-                    className="shopping-item animate-slide-in"
-                    style={{ animationDelay: `${index * 0.03}s`, opacity: 0 }}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl bg-card border border-border/50 transition-all ${
+                      item.checked ? "opacity-50 bg-muted/30" : "hover:bg-muted/30"
+                    }`}
                   >
-                    <span className="font-medium text-foreground">{item.name}</span>
+                    <Checkbox
+                      data-testid={`check-item-${index}`}
+                      checked={item.checked}
+                      onCheckedChange={() => toggleShoppingItem(item.name)}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <span className={`flex-1 font-medium ${item.checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {item.name}
+                    </span>
                     {item.count > 1 && (
                       <Badge variant="outline" className="rounded-full">
                         x{item.count}
                       </Badge>
                     )}
+                    <Button
+                      data-testid={`remove-item-${index}`}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeShoppingItem(item.name)}
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -520,18 +621,30 @@ function App() {
                   No hay ingredientes todavía
                 </p>
                 <p className="text-sm text-muted-foreground/70">
-                  Añade comidas para generar tu lista
+                  Usa el icono <ShoppingBag className="w-3 h-3 inline" /> en cada comida para añadir
                 </p>
               </div>
             )}
           </ScrollArea>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
+            {shoppingList.length > 0 && (
+              <Button
+                data-testid="clear-shopping-list-btn"
+                variant="destructive"
+                onClick={clearShoppingList}
+                className="rounded-full"
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Vaciar lista
+              </Button>
+            )}
             <Button
               data-testid="close-shopping-list-btn"
               variant="secondary"
               onClick={() => setShowShoppingList(false)}
-              className="rounded-full w-full"
+              className="rounded-full flex-1 sm:flex-none"
             >
               Cerrar
             </Button>
