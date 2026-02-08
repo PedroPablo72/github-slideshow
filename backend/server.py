@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +6,9 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
-
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,46 +24,157 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-
 # Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
+class Ingredient(BaseModel):
+    name: str
+
+class Meal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    name: str
+    ingredients: List[str] = []
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class MealCreate(BaseModel):
+    name: str
+    ingredients: List[str] = []
 
-# Add your routes to the router instead of directly to app
+class MealSlot(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    day: int  # 0-6 (Lunes-Domingo)
+    meal_type: str  # "desayuno", "comida", "cena"
+    meal: Optional[Meal] = None
+
+class WeeklyPlan(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    slots: List[MealSlot] = []
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class UpdateMealSlotRequest(BaseModel):
+    day: int
+    meal_type: str
+    meal: Optional[MealCreate] = None
+
+class ShoppingItem(BaseModel):
+    name: str
+    count: int = 1
+
+# Initialize empty weekly plan structure
+def create_empty_weekly_plan():
+    slots = []
+    days = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+    meal_types = ["desayuno", "comida", "cena"]
+    for day_idx in range(7):
+        for meal_type in meal_types:
+            slots.append(MealSlot(day=day_idx, meal_type=meal_type, meal=None))
+    return WeeklyPlan(slots=slots)
+
+# Routes
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "KetoFlow API - Planificador de Dieta Cetogénica"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+@api_router.get("/weekly-plan")
+async def get_weekly_plan():
+    plan = await db.weekly_plans.find_one({}, {"_id": 0})
+    if not plan:
+        # Create initial empty plan
+        new_plan = create_empty_weekly_plan()
+        plan_dict = new_plan.model_dump()
+        await db.weekly_plans.insert_one(plan_dict)
+        return plan_dict
+    return plan
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.put("/weekly-plan/slot")
+async def update_meal_slot(request: UpdateMealSlotRequest):
+    plan = await db.weekly_plans.find_one({}, {"_id": 0})
+    if not plan:
+        new_plan = create_empty_weekly_plan()
+        plan = new_plan.model_dump()
+        await db.weekly_plans.insert_one(plan)
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    # Find and update the specific slot
+    slots = plan.get("slots", [])
+    updated = False
+    for slot in slots:
+        if slot["day"] == request.day and slot["meal_type"] == request.meal_type:
+            if request.meal:
+                meal_data = Meal(
+                    name=request.meal.name,
+                    ingredients=request.meal.ingredients
+                ).model_dump()
+                slot["meal"] = meal_data
+            else:
+                slot["meal"] = None
+            updated = True
+            break
     
-    return status_checks
+    if not updated:
+        raise HTTPException(status_code=404, detail="Slot no encontrado")
+    
+    # Update the plan in database
+    plan["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.weekly_plans.update_one(
+        {"id": plan["id"]},
+        {"$set": {"slots": slots, "updated_at": plan["updated_at"]}}
+    )
+    
+    return {"message": "Comida actualizada", "slot": {"day": request.day, "meal_type": request.meal_type}}
+
+@api_router.delete("/weekly-plan/slot")
+async def delete_meal_slot(day: int, meal_type: str):
+    plan = await db.weekly_plans.find_one({}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    
+    slots = plan.get("slots", [])
+    for slot in slots:
+        if slot["day"] == day and slot["meal_type"] == meal_type:
+            slot["meal"] = None
+            break
+    
+    plan["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.weekly_plans.update_one(
+        {"id": plan["id"]},
+        {"$set": {"slots": slots, "updated_at": plan["updated_at"]}}
+    )
+    
+    return {"message": "Comida eliminada"}
+
+@api_router.delete("/weekly-plan/reset")
+async def reset_weekly_plan():
+    await db.weekly_plans.delete_many({})
+    new_plan = create_empty_weekly_plan()
+    plan_dict = new_plan.model_dump()
+    await db.weekly_plans.insert_one(plan_dict)
+    return {"message": "Plan semanal reiniciado", "plan": plan_dict}
+
+@api_router.get("/shopping-list", response_model=List[ShoppingItem])
+async def get_shopping_list():
+    plan = await db.weekly_plans.find_one({}, {"_id": 0})
+    if not plan:
+        return []
+    
+    # Aggregate all ingredients
+    ingredient_count = {}
+    for slot in plan.get("slots", []):
+        if slot.get("meal") and slot["meal"].get("ingredients"):
+            for ingredient in slot["meal"]["ingredients"]:
+                ingredient_lower = ingredient.strip().lower()
+                if ingredient_lower:
+                    if ingredient_lower in ingredient_count:
+                        ingredient_count[ingredient_lower] += 1
+                    else:
+                        ingredient_count[ingredient_lower] = 1
+    
+    # Convert to list and capitalize first letter
+    shopping_list = [
+        ShoppingItem(name=name.capitalize(), count=count)
+        for name, count in sorted(ingredient_count.items())
+    ]
+    
+    return shopping_list
 
 # Include the router in the main app
 app.include_router(api_router)

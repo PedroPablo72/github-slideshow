@@ -1,34 +1,98 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
-}
+/* KetoFlow App Styles */
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
-}
-
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
-}
-
-.App-link {
-    color: #61dafb;
-}
-
-@keyframes App-logo-spin {
+/* Animation keyframes */
+@keyframes fadeIn {
     from {
-        transform: rotate(0deg);
+        opacity: 0;
+        transform: translateY(10px);
     }
     to {
-        transform: rotate(360deg);
+        opacity: 1;
+        transform: translateY(0);
     }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse-soft {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Animation utilities */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Stagger animations */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+
+/* Card hover effects */
+.card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styles */
+.btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 py-2.5 font-semibold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5;
+}
+
+.btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-full px-5 py-2 font-medium transition-all;
+}
+
+.btn-ghost {
+    @apply hover:bg-muted text-muted-foreground hover:text-foreground rounded-full px-4 py-2 transition-colors;
+}
+
+/* Day column styling */
+.day-column {
+    @apply flex flex-col gap-3;
+}
+
+/* Ingredient tag */
+.ingredient-tag {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/30 text-accent-foreground;
+}
+
+/* Empty state */
+.empty-state {
+    @apply flex flex-col items-center justify-center text-center p-8 rounded-2xl bg-muted/50;
+}
+
+/* Shopping list item */
+.shopping-item {
+    @apply flex items-center justify-between py-3 px-4 rounded-xl bg-card border border-border/50 hover:bg-muted/30 transition-colors;
 }
