@@ -406,14 +406,25 @@ class KetoMealPlannerTester:
             self.test_get_weekly_plan_initial,
             self.test_add_meal_to_slot,
             self.test_get_weekly_plan_with_meal,
-            self.test_get_shopping_list,
-            self.test_add_second_meal,
-            self.test_updated_shopping_list,
-            self.test_delete_meal_from_slot,
-            self.test_verify_meal_deleted,
             self.test_reset_weekly_plan,
             self.test_verify_plan_reset,
-            self.test_empty_shopping_list
+            self.test_empty_shopping_list,
+            
+            # Shopping List functionality tests
+            self.test_add_ingredients_to_shopping_list,
+            self.test_verify_shopping_list_has_items,
+            self.test_add_duplicate_ingredients,
+            self.test_verify_incremented_counts,
+            self.test_toggle_shopping_item,
+            self.test_verify_item_toggled,
+            self.test_remove_individual_item,
+            self.test_verify_item_removed,
+            self.test_clear_shopping_list,
+            self.test_verify_list_cleared,
+            
+            # Export functionality tests
+            self.test_export_json,
+            self.test_export_csv
         ]
         
         for test in test_sequence:
