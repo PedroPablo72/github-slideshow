@@ -224,29 +224,66 @@ async def export_as_csv():
 
 @api_router.get("/shopping-list", response_model=List[ShoppingItem])
 async def get_shopping_list():
-    plan = await db.weekly_plans.find_one({}, {"_id": 0})
-    if not plan:
-        return []
+    """Get the custom shopping list"""
+    items = await db.shopping_list.find({}, {"_id": 0}).to_list(1000)
+    return items
+
+@api_router.post("/shopping-list/add")
+async def add_to_shopping_list(request: AddToShoppingListRequest):
+    """Add ingredients to shopping list"""
+    added = []
+    for ingredient in request.ingredients:
+        ingredient_lower = ingredient.strip().lower()
+        if not ingredient_lower:
+            continue
+        
+        # Check if already exists
+        existing = await db.shopping_list.find_one({"name_lower": ingredient_lower}, {"_id": 0})
+        if existing:
+            # Increment count
+            await db.shopping_list.update_one(
+                {"name_lower": ingredient_lower},
+                {"$inc": {"count": 1}}
+            )
+        else:
+            # Add new
+            await db.shopping_list.insert_one({
+                "name": ingredient.strip().capitalize(),
+                "name_lower": ingredient_lower,
+                "count": 1,
+                "checked": False
+            })
+        added.append(ingredient.strip().capitalize())
     
-    # Aggregate all ingredients
-    ingredient_count = {}
-    for slot in plan.get("slots", []):
-        if slot.get("meal") and slot["meal"].get("ingredients"):
-            for ingredient in slot["meal"]["ingredients"]:
-                ingredient_lower = ingredient.strip().lower()
-                if ingredient_lower:
-                    if ingredient_lower in ingredient_count:
-                        ingredient_count[ingredient_lower] += 1
-                    else:
-                        ingredient_count[ingredient_lower] = 1
+    return {"message": f"Añadidos {len(added)} ingredientes", "added": added}
+
+@api_router.delete("/shopping-list/item")
+async def remove_from_shopping_list(name: str):
+    """Remove an item from shopping list"""
+    result = await db.shopping_list.delete_one({"name_lower": name.lower()})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
+    return {"message": "Ingrediente eliminado"}
+
+@api_router.put("/shopping-list/toggle")
+async def toggle_shopping_item(name: str):
+    """Toggle checked status of an item"""
+    item = await db.shopping_list.find_one({"name_lower": name.lower()}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
     
-    # Convert to list and capitalize first letter
-    shopping_list = [
-        ShoppingItem(name=name.capitalize(), count=count)
-        for name, count in sorted(ingredient_count.items())
-    ]
-    
-    return shopping_list
+    new_checked = not item.get("checked", False)
+    await db.shopping_list.update_one(
+        {"name_lower": name.lower()},
+        {"$set": {"checked": new_checked}}
+    )
+    return {"message": "Estado actualizado", "checked": new_checked}
+
+@api_router.delete("/shopping-list/clear")
+async def clear_shopping_list():
+    """Clear entire shopping list"""
+    await db.shopping_list.delete_many({})
+    return {"message": "Lista vaciada"}
 
 # Include the router in the main app
 app.include_router(api_router)
