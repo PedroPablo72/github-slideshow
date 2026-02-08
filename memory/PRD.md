@@ -22,14 +22,16 @@ Necesito una tabla para generar dieta cetogénica semanal desayuno comida y cena
 5. Persistencia de datos en MongoDB
 
 ## What's Been Implemented (Jan 2026)
-- [x] Grid semanal de 7 días con 3 slots por día
-- [x] Dialog modal para añadir/editar comidas
-- [x] Gestión de ingredientes con tags
+- [x] Tabla editable semanal con 7 columnas (días) x 3 filas (comidas)
+- [x] Edición inline directa (click en celda para editar)
+- [x] Ingredientes separados por comas
 - [x] Lista de compra con conteo de ingredientes repetidos
+- [x] **Exportación como JSON** (formato base de datos completo)
+- [x] **Exportación como CSV** (formato tabla para Excel/Sheets)
 - [x] Botón de reinicio de semana
 - [x] UI en español con tema claro orgánico
 - [x] Fuentes: Outfit (headings) + Inter (body)
-- [x] 100% tests pasados (backend + frontend)
+- [x] 100% tests backend + 95% frontend
 
 ## API Endpoints
 - GET /api/weekly-plan - Obtener plan semanal
@@ -37,9 +39,11 @@ Necesito una tabla para generar dieta cetogénica semanal desayuno comida y cena
 - DELETE /api/weekly-plan/slot - Eliminar comida de slot
 - DELETE /api/weekly-plan/reset - Reiniciar semana
 - GET /api/shopping-list - Lista de compra agregada
+- **GET /api/export/json** - Exportar plan como JSON
+- **GET /api/export/csv** - Exportar plan como CSV
 
 ## Next Action Items (P1)
-- [ ] Exportar lista de compra (PDF/texto)
+- [ ] Importar plan desde JSON/CSV
 - [ ] Copiar semana anterior
 - [ ] Sugerencias de recetas keto predefinidas
 
