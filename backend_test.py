@@ -294,17 +294,41 @@ class KetoMealPlannerTester:
 
     def test_toggle_shopping_item(self):
         """Test toggling an item's checked status"""
-        # Toggle first item
-        params = {"name": "Pollo"}
-        success, response = self.run_test("Toggle Shopping Item", "PUT", "shopping-list/toggle", 200, params=params)
-        if success and response:
-            if 'checked' in response:
-                print(f"   ✅ Item toggled - checked: {response['checked']}")
-                return True, response
+        # Toggle first item  
+        url = f"{self.api_url}/shopping-list/toggle?name=Pollo"
+        headers = {'Content-Type': 'application/json'}
+        
+        print(f"\n🔍 Testing Toggle Shopping Item...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.put(url, headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}, Expected: 200"
+            
+            if success:
+                response_data = response.json()
+                details += f", Response: {response_data}"
+                if 'checked' in response_data:
+                    print(f"   ✅ Item toggled - checked: {response_data['checked']}")
+                    self.log_test("Toggle Shopping Item", True, details)
+                    return True, response_data
+                else:
+                    print(f"   ❌ Toggle response invalid: {response_data}")
+                    self.log_test("Toggle Shopping Item", False, f"Invalid response: {response_data}")
+                    return False, response_data
             else:
-                print(f"   ❌ Toggle response invalid: {response}")
-                return False, response
-        return success, response
+                try:
+                    error_data = response.json()
+                    details += f", Error: {error_data}"
+                except:
+                    details += f", Error: {response.text}"
+                self.log_test("Toggle Shopping Item", False, details)
+                return False, {}
+                
+        except Exception as e:
+            self.log_test("Toggle Shopping Item", False, f"Error: {str(e)}")
+            return False, {}
 
     def test_verify_item_toggled(self):
         """Test that item was actually toggled"""
