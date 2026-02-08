@@ -25,26 +25,28 @@ Necesito una tabla para generar dieta cetogénica semanal desayuno comida y cena
 - [x] Tabla editable semanal con 7 columnas (días) x 3 filas (comidas)
 - [x] Edición inline directa (click en celda para editar)
 - [x] Ingredientes separados por comas
-- [x] **Añadir ingredientes a lista**: Botón 🛍️ al hacer hover sobre comida
-- [x] **Lista de compra interactiva**: Checkboxes, eliminar individual, vaciar lista
+- [x] Añadir ingredientes a lista: Botón 🛍️ al hacer hover sobre comida
+- [x] Lista de compra interactiva: Checkboxes, eliminar individual, vaciar lista
 - [x] Contador de ingredientes pendientes en header
-- [x] Ingredientes repetidos muestran contador (x2, x3...)
-- [x] **Exportación como JSON** (formato base de datos completo)
-- [x] **Exportación como CSV** (formato tabla para Excel/Sheets)
+- [x] **Exportar lista de compra**: Copiar, descargar .txt, WhatsApp, compartir nativo
+- [x] Exportación plan como JSON (formato base de datos)
+- [x] Exportación plan como CSV (formato tabla Excel/Sheets)
 - [x] Botón de reinicio de semana
 - [x] UI en español con tema claro orgánico
-- [x] 100% tests backend + 90% frontend
+- [x] 100% tests backend + 95% frontend
 
 ## API Endpoints
 - GET /api/weekly-plan - Obtener plan semanal
 - PUT /api/weekly-plan/slot - Actualizar slot de comida
 - DELETE /api/weekly-plan/slot - Eliminar comida de slot
 - DELETE /api/weekly-plan/reset - Reiniciar semana
-- **GET /api/shopping-list** - Lista de compra
-- **POST /api/shopping-list/add** - Añadir ingredientes a lista
-- **PUT /api/shopping-list/toggle** - Marcar/desmarcar item
-- **DELETE /api/shopping-list/item** - Eliminar item de lista
-- **DELETE /api/shopping-list/clear** - Vaciar lista completa
+- GET /api/shopping-list - Lista de compra
+- POST /api/shopping-list/add - Añadir ingredientes a lista
+- PUT /api/shopping-list/toggle - Marcar/desmarcar item
+- DELETE /api/shopping-list/item - Eliminar item de lista
+- DELETE /api/shopping-list/clear - Vaciar lista completa
+- **GET /api/shopping-list/export/text** - Exportar lista como texto
+- **GET /api/shopping-list/export/whatsapp** - Exportar para WhatsApp
 - GET /api/export/json - Exportar plan como JSON
 - GET /api/export/csv - Exportar plan como CSV
 
