@@ -25,27 +25,32 @@ Necesito una tabla para generar dieta cetogénica semanal desayuno comida y cena
 - [x] Tabla editable semanal con 7 columnas (días) x 3 filas (comidas)
 - [x] Edición inline directa (click en celda para editar)
 - [x] Ingredientes separados por comas
-- [x] Lista de compra con conteo de ingredientes repetidos
+- [x] **Añadir ingredientes a lista**: Botón 🛍️ al hacer hover sobre comida
+- [x] **Lista de compra interactiva**: Checkboxes, eliminar individual, vaciar lista
+- [x] Contador de ingredientes pendientes en header
+- [x] Ingredientes repetidos muestran contador (x2, x3...)
 - [x] **Exportación como JSON** (formato base de datos completo)
 - [x] **Exportación como CSV** (formato tabla para Excel/Sheets)
 - [x] Botón de reinicio de semana
 - [x] UI en español con tema claro orgánico
-- [x] Fuentes: Outfit (headings) + Inter (body)
-- [x] 100% tests backend + 95% frontend
+- [x] 100% tests backend + 90% frontend
 
 ## API Endpoints
 - GET /api/weekly-plan - Obtener plan semanal
 - PUT /api/weekly-plan/slot - Actualizar slot de comida
 - DELETE /api/weekly-plan/slot - Eliminar comida de slot
 - DELETE /api/weekly-plan/reset - Reiniciar semana
-- GET /api/shopping-list - Lista de compra agregada
-- **GET /api/export/json** - Exportar plan como JSON
-- **GET /api/export/csv** - Exportar plan como CSV
+- **GET /api/shopping-list** - Lista de compra
+- **POST /api/shopping-list/add** - Añadir ingredientes a lista
+- **PUT /api/shopping-list/toggle** - Marcar/desmarcar item
+- **DELETE /api/shopping-list/item** - Eliminar item de lista
+- **DELETE /api/shopping-list/clear** - Vaciar lista completa
+- GET /api/export/json - Exportar plan como JSON
+- GET /api/export/csv - Exportar plan como CSV
 
 ## Next Action Items (P1)
 - [ ] Importar plan desde JSON/CSV
 - [ ] Copiar semana anterior
-- [ ] Sugerencias de recetas keto predefinidas
 
 ## Backlog (P2)
 - [ ] Información nutricional opcional
