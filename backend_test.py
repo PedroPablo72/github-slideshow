@@ -426,6 +426,37 @@ class KetoMealPlannerTester:
         success, _ = self.run_test("Export CSV", "GET", "export/csv", 200)
         return success, {}
 
+    def test_shopping_list_export_text(self):
+        """Test shopping list text export functionality"""
+        # First add some items to shopping list
+        ingredients_data = {
+            "ingredients": ["aguacate", "huevos", "salmón", "brócoli"]
+        }
+        self.run_test("Setup Items for Export Test", "POST", "shopping-list/add", 200, data=ingredients_data)
+        
+        # Now test text export
+        success, _ = self.run_test("Shopping List Export Text", "GET", "shopping-list/export/text", 200)
+        if success:
+            print("   ✅ Shopping list text export successful")
+        return success, {}
+
+    def test_shopping_list_export_whatsapp(self):
+        """Test shopping list WhatsApp export functionality"""
+        success, response = self.run_test("Shopping List Export WhatsApp", "GET", "shopping-list/export/whatsapp", 200)
+        if success and response:
+            if 'text' in response and 'url' in response:
+                print("   ✅ WhatsApp export has correct structure")
+                if response['url'].startswith("https://wa.me/"):
+                    print("   ✅ WhatsApp URL format is correct")
+                    return True, response
+                else:
+                    print(f"   ❌ Invalid WhatsApp URL format: {response['url']}")
+                    return False, response
+            else:
+                print(f"   ❌ WhatsApp export missing fields: {list(response.keys())}")
+                return False, response
+        return success, response
+
     def run_all_tests(self):
         """Run complete test suite"""
         print("🚀 Starting Keto Meal Planner API Tests")
