@@ -59,6 +59,10 @@ class UpdateMealSlotRequest(BaseModel):
 class ShoppingItem(BaseModel):
     name: str
     count: int = 1
+    checked: bool = False
+
+class AddToShoppingListRequest(BaseModel):
+    ingredients: List[str]
 
 # Initialize empty weekly plan structure
 def create_empty_weekly_plan():
