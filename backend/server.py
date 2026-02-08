@@ -67,8 +67,7 @@ class AddToShoppingListRequest(BaseModel):
 # Initialize empty weekly plan structure
 def create_empty_weekly_plan():
     slots = []
-    days = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
-    meal_types = ["desayuno", "comida", "cena"]
+    meal_types = ["desayuno", "aperitivo", "comida", "cena"]
     for day_idx in range(7):
         for meal_type in meal_types:
             slots.append(MealSlot(day=day_idx, meal_type=meal_type, meal=None))

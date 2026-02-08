@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import "@/App.css";
 import axios from "axios";
 import { Toaster, toast } from "sonner";
-import { Sun, Utensils, Moon, ShoppingCart, Download, RotateCcw, X, Plus, Loader2, FileJson, FileSpreadsheet, ShoppingBag, Trash2, Copy, Share2, FileText, MessageCircle } from "lucide-react";
+import { Sun, Utensils, Moon, ShoppingCart, Download, RotateCcw, X, Plus, Loader2, FileJson, FileSpreadsheet, ShoppingBag, Trash2, Copy, Share2, FileText, MessageCircle, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ const API = `${BACKEND_URL}/api`;
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const MEAL_TYPES = [
   { key: "desayuno", label: "Desayuno", icon: Sun },
+  { key: "aperitivo", label: "Aperitivo", icon: Coffee },
   { key: "comida", label: "Comida", icon: Utensils },
   { key: "cena", label: "Cena", icon: Moon },
 ];
