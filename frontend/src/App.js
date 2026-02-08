@@ -690,24 +690,75 @@ function App() {
             )}
           </ScrollArea>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             {shoppingList.length > 0 && (
-              <Button
-                data-testid="clear-shopping-list-btn"
-                variant="destructive"
-                onClick={clearShoppingList}
-                className="rounded-full"
-                size="sm"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Vaciar lista
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                {/* Share/Export dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      data-testid="share-list-btn"
+                      variant="outline"
+                      className="rounded-full flex-1 sm:flex-none"
+                      size="sm"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Compartir
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="rounded-xl">
+                    <DropdownMenuItem
+                      data-testid="copy-list-btn"
+                      onClick={copyShoppingList}
+                      className="cursor-pointer"
+                    >
+                      <Copy className="w-4 h-4 mr-2 text-primary" />
+                      Copiar al portapapeles
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      data-testid="download-list-btn"
+                      onClick={downloadShoppingList}
+                      className="cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                      Descargar como texto
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      data-testid="share-whatsapp-btn"
+                      onClick={shareWhatsApp}
+                      className="cursor-pointer"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2 text-green-600" />
+                      Enviar por WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      data-testid="share-native-btn"
+                      onClick={shareNative}
+                      className="cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4 mr-2 text-violet-600" />
+                      Compartir...
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button
+                  data-testid="clear-shopping-list-btn"
+                  variant="ghost"
+                  onClick={clearShoppingList}
+                  className="rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                  size="sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             )}
             <Button
               data-testid="close-shopping-list-btn"
               variant="secondary"
               onClick={() => setShowShoppingList(false)}
-              className="rounded-full flex-1 sm:flex-none"
+              className="rounded-full w-full sm:w-auto"
             >
               Cerrar
             </Button>
