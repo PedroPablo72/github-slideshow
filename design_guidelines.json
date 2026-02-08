@@ -1,0 +1,139 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "KetoFlow",
+      "personality": "Organic, Organized, Encouraging, Clean",
+      "archetype": "Organic & Earthy",
+      "language": "es"
+    },
+    "typography": {
+      "font_family": {
+        "heading": "Outfit, sans-serif",
+        "body": "Inter, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+        "h2": "text-3xl font-semibold tracking-tight",
+        "h3": "text-2xl font-semibold",
+        "body_lg": "text-lg leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "caption": "text-sm text-muted-foreground",
+        "label": "text-xs font-bold uppercase tracking-widest text-muted-foreground"
+      },
+      "usage_rules": "Use Outfit for all main headings (h1, h2). Use Inter for all data tables, inputs, and long-form text. Use Uppercase Label style for table headers and form labels."
+    },
+    "colors": {
+      "palette": {
+        "background": "#FAFAF9",
+        "foreground": "#1C1917",
+        "card": "#FFFFFF",
+        "card_foreground": "#1C1917",
+        "popover": "#FFFFFF",
+        "popover_foreground": "#1C1917",
+        "primary": "#4F772D",
+        "primary_foreground": "#FFFFFF",
+        "secondary": "#E7E5E4",
+        "secondary_foreground": "#1C1917",
+        "muted": "#F5F5F4",
+        "muted_foreground": "#78716C",
+        "accent": "#F2CC8F",
+        "accent_foreground": "#1C1917",
+        "destructive": "#EF4444",
+        "destructive_foreground": "#FFFFFF",
+        "border": "#E5E7EB",
+        "input": "#E5E7EB",
+        "ring": "#4F772D"
+      },
+      "functional": {
+        "protein_tag": "#E07A5F",
+        "fat_tag": "#F2CC8F",
+        "veg_tag": "#4F772D",
+        "empty_state_bg": "#F5F5F4"
+      },
+      "gradients": {
+        "hero_subtle": "linear-gradient(135deg, #FAFAF9 0%, #F0FDF4 100%)"
+      }
+    },
+    "layout": {
+      "spacing": {
+        "container_padding": "p-6 md:p-12 lg:p-16",
+        "section_gap": "gap-12",
+        "component_gap": "gap-6"
+      },
+      "grid_systems": {
+        "weekly_view": "grid grid-cols-1 md:grid-cols-7 gap-4",
+        "card_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
+        "dashboard_bento": "grid grid-cols-1 md:grid-cols-12 gap-6"
+      },
+      "border_radius": {
+        "outer": "rounded-2xl",
+        "inner": "rounded-xl",
+        "button": "rounded-full"
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-8 py-3 font-semibold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5",
+        "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-full px-6 py-2 font-medium transition-all",
+        "ghost": "hover:bg-muted text-muted-foreground hover:text-foreground rounded-full px-4 py-2 transition-colors",
+        "destructive": "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full px-6 py-2 transition-all"
+      },
+      "cards": {
+        "base": "bg-card border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden",
+        "meal_slot": "bg-white border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer rounded-xl flex flex-col items-center justify-center min-h-[120px] p-4 group",
+        "meal_filled": "bg-white border border-border shadow-sm hover:shadow-md transition-all rounded-xl p-4 relative overflow-hidden group"
+      },
+      "inputs": {
+        "base": "flex h-12 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+      },
+      "dialogs": {
+        "overlay": "fixed inset-0 z-50 bg-black/20 backdrop-blur-sm",
+        "content": "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-2xl"
+      }
+    },
+    "visual_enhancers": {
+      "shadows": {
+        "soft": "0 4px 20px -2px rgba(0, 0, 0, 0.05)",
+        "hover": "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)"
+      },
+      "glassmorphism": {
+        "header": "bg-white/80 backdrop-blur-md border-b border-border/40 sticky top-0 z-40"
+      },
+      "textures": "Use subtle noise or grain on the main background if possible to give it a 'paper' feel."
+    },
+    "accessibility": {
+      "rules": [
+        "Ensure 4.5:1 contrast ratio for all body text.",
+        "Interactive elements must have focus states (ring-2 ring-primary).",
+        "Use semantic HTML (section, article, header, main).",
+        "All images must have alt text.",
+        "Do not rely on color alone for status (use icons + text)."
+      ]
+    },
+    "assets": {
+      "icons": "Use Lucide React icons. Stroke width: 1.5px or 2px. Rounded caps.",
+      "images": {
+        "hero_food_bg": "https://images.unsplash.com/photo-1705690333297-9d5787dbe5b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMHZlZ2V0YWJsZXMlMjBhdm9jYWRvJTIwc2FsbW9uJTIwc3RlYWslMjBlZ2dzJTIwbWluaW1hbGlzdGljJTIwd2hpdGUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3MDU3NjA4MHww&ixlib=rb-4.1.0&q=85",
+        "avocado_accent": "https://images.unsplash.com/photo-1676620202330-5dc47b4d126a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwzfHxmcmVzaCUyMHZlZ2V0YWJsZXMlMjBhdm9jYWRvJTIwc2FsbW9uJTIwc3RlYWslMjBlZ2dzJTIwbWluaW1hbGlzdGljJTIwd2hpdGUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3MDU3NjA4MHww&ixlib=rb-4.1.0&q=85"
+      }
+    },
+    "instructions_to_main_agent": [
+      "IMPLEMENTATION LANGUAGE: SPANISH. All UI text, labels, and placeholders must be in Spanish.",
+      "THEME: Strict Light Mode. Use the specified warm white/beige background.",
+      "LAYOUT: The main dashboard is the 'Weekly Planner'. Use a 7-column grid (one for each day) on desktop, single column on mobile.",
+      "INTERACTION: Clicking an empty meal slot opens a Shadcn Dialog to add a meal.",
+      "SHOPPING LIST: This should be a separate view or a side-drawer. It aggregates ingredients from the week.",
+      "VISUALS: Avoid standard 'table' borders. Use cards for days. Use plenty of whitespace.",
+      "DATA: No nutritional info needed. Just 'Meal Name' and 'Ingredients' (list).",
+      "TYPOGRAPHY: Import fonts via Google Fonts (Outfit and Inter) in index.css.",
+      "ICONS: Use Lucide icons for meal types (Sun for Breakfast, Utensils for Lunch, Moon for Dinner)."
+    ],
+    "universal_guidelines": [
+      "Do not center align the app container.",
+      "Use 'sonner' for toasts.",
+      "Create components in /components/ui using Shadcn patterns but customized styles.",
+      "Use data-testid for all interactive elements."
+    ]
+  }
+}
