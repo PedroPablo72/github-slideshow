@@ -487,7 +487,11 @@ class KetoMealPlannerTester:
             
             # Export functionality tests
             self.test_export_json,
-            self.test_export_csv
+            self.test_export_csv,
+            
+            # Shopping list export functionality tests
+            self.test_shopping_list_export_text,
+            self.test_shopping_list_export_whatsapp
         ]
         
         for test in test_sequence:
