@@ -150,6 +150,74 @@ async def reset_weekly_plan():
     await db.weekly_plans.insert_one(plan_dict.copy())
     return {"message": "Plan semanal reiniciado", "plan": plan_dict}
 
+# Export endpoints
+@api_router.get("/export/json")
+async def export_as_json():
+    """Export weekly plan as JSON database format"""
+    plan = await db.weekly_plans.find_one({}, {"_id": 0})
+    if not plan:
+        plan = create_empty_weekly_plan().model_dump()
+    
+    # Format for export
+    export_data = {
+        "export_date": datetime.now(timezone.utc).isoformat(),
+        "app": "KetoFlow",
+        "version": "1.0",
+        "weekly_plan": {
+            "id": plan.get("id"),
+            "created_at": plan.get("created_at"),
+            "updated_at": plan.get("updated_at"),
+            "days": {}
+        }
+    }
+    
+    days_names = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+    for slot in plan.get("slots", []):
+        day_name = days_names[slot["day"]]
+        if day_name not in export_data["weekly_plan"]["days"]:
+            export_data["weekly_plan"]["days"][day_name] = {}
+        
+        meal_data = slot.get("meal")
+        if meal_data:
+            export_data["weekly_plan"]["days"][day_name][slot["meal_type"]] = {
+                "name": meal_data.get("name"),
+                "ingredients": meal_data.get("ingredients", [])
+            }
+        else:
+            export_data["weekly_plan"]["days"][day_name][slot["meal_type"]] = None
+    
+    return export_data
+
+from fastapi.responses import PlainTextResponse
+
+@api_router.get("/export/csv", response_class=PlainTextResponse)
+async def export_as_csv():
+    """Export weekly plan as CSV format"""
+    plan = await db.weekly_plans.find_one({}, {"_id": 0})
+    if not plan:
+        plan = create_empty_weekly_plan().model_dump()
+    
+    days_names = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    meal_types = ["desayuno", "comida", "cena"]
+    
+    # Build CSV
+    lines = []
+    lines.append("Día,Tipo de Comida,Nombre del Plato,Ingredientes")
+    
+    for slot in plan.get("slots", []):
+        day_name = days_names[slot["day"]]
+        meal_type = slot["meal_type"].capitalize()
+        meal = slot.get("meal")
+        
+        if meal:
+            name = meal.get("name", "").replace('"', '""')
+            ingredients = "; ".join(meal.get("ingredients", [])).replace('"', '""')
+            lines.append(f'"{day_name}","{meal_type}","{name}","{ingredients}"')
+        else:
+            lines.append(f'"{day_name}","{meal_type}","",""')
+    
+    return "\n".join(lines)
+
 @api_router.get("/shopping-list", response_model=List[ShoppingItem])
 async def get_shopping_list():
     plan = await db.weekly_plans.find_one({}, {"_id": 0})

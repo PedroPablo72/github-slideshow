@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "@/App.css";
 import axios from "axios";
 import { Toaster, toast } from "sonner";
-import { Sun, Utensils, Moon, ShoppingCart, Plus, Trash2, RotateCcw, X, Check, Loader2 } from "lucide-react";
+import { Sun, Utensils, Moon, ShoppingCart, Download, RotateCcw, X, Plus, Loader2, FileJson, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -20,17 +22,189 @@ const MEAL_TYPES = [
   { key: "cena", label: "Cena", icon: Moon },
 ];
 
+// Editable Cell Component
+const EditableCell = ({ day, mealType, meal, onSave, onDelete }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [mealName, setMealName] = useState(meal?.name || "");
+  const [ingredientsText, setIngredientsText] = useState(meal?.ingredients?.join(", ") || "");
+  const [saving, setSaving] = useState(false);
+  const nameInputRef = useRef(null);
+
+  useEffect(() => {
+    setMealName(meal?.name || "");
+    setIngredientsText(meal?.ingredients?.join(", ") || "");
+  }, [meal]);
+
+  useEffect(() => {
+    if (isEditing && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const handleSave = async () => {
+    if (!mealName.trim()) {
+      if (meal) {
+        // Delete if name cleared on existing meal
+        await handleDelete();
+      } else {
+        setIsEditing(false);
+      }
+      return;
+    }
+
+    setSaving(true);
+    const ingredients = ingredientsText
+      .split(",")
+      .map(i => i.trim())
+      .filter(i => i.length > 0);
+
+    try {
+      await onSave(day, mealType, { name: mealName.trim(), ingredients });
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error saving:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setSaving(true);
+    try {
+      await onDelete(day, mealType);
+      setMealName("");
+      setIngredientsText("");
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error deleting:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    }
+    if (e.key === "Escape") {
+      setMealName(meal?.name || "");
+      setIngredientsText(meal?.ingredients?.join(", ") || "");
+      setIsEditing(false);
+    }
+  };
+
+  const MealIcon = MEAL_TYPES.find(m => m.key === mealType)?.icon || Utensils;
+
+  if (isEditing) {
+    return (
+      <div className="p-2 space-y-2 bg-primary/5 rounded-lg border-2 border-primary/30">
+        <Input
+          ref={nameInputRef}
+          data-testid={`edit-name-${day}-${mealType}`}
+          value={mealName}
+          onChange={(e) => setMealName(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Nombre del plato..."
+          className="h-8 text-sm rounded-lg"
+          disabled={saving}
+        />
+        <Textarea
+          data-testid={`edit-ingredients-${day}-${mealType}`}
+          value={ingredientsText}
+          onChange={(e) => setIngredientsText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ingredientes (separados por coma)"
+          className="text-xs min-h-[50px] rounded-lg resize-none"
+          disabled={saving}
+        />
+        <div className="flex gap-1 justify-end">
+          {meal && (
+            <Button
+              data-testid={`delete-${day}-${mealType}`}
+              size="sm"
+              variant="ghost"
+              onClick={handleDelete}
+              disabled={saving}
+              className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+          <Button
+            data-testid={`cancel-${day}-${mealType}`}
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setMealName(meal?.name || "");
+              setIngredientsText(meal?.ingredients?.join(", ") || "");
+              setIsEditing(false);
+            }}
+            disabled={saving}
+            className="h-7 px-2"
+          >
+            Cancelar
+          </Button>
+          <Button
+            data-testid={`save-${day}-${mealType}`}
+            size="sm"
+            onClick={handleSave}
+            disabled={saving}
+            className="h-7 px-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full"
+          >
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Guardar"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid={`cell-${day}-${mealType}`}
+      onClick={() => setIsEditing(true)}
+      className={`p-2 rounded-lg cursor-pointer transition-all min-h-[80px] ${
+        meal
+          ? "bg-white border border-border/50 hover:border-primary/30 hover:shadow-sm"
+          : "border-2 border-dashed border-border/50 hover:border-primary/30 hover:bg-primary/5"
+      }`}
+    >
+      {meal ? (
+        <div>
+          <div className="flex items-start gap-1.5 mb-1">
+            <MealIcon className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+            <span className="font-medium text-sm text-foreground line-clamp-2">{meal.name}</span>
+          </div>
+          {meal.ingredients?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {meal.ingredients.slice(0, 4).map((ing, i) => (
+                <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 bg-accent/30 border-0">
+                  {ing}
+                </Badge>
+              ))}
+              {meal.ingredients.length > 4 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-muted border-0">
+                  +{meal.ingredients.length - 4}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full text-muted-foreground/50">
+          <Plus className="w-4 h-4 mb-1" />
+          <span className="text-[10px]">Click para añadir</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 function App() {
   const [weeklyPlan, setWeeklyPlan] = useState(null);
   const [shoppingList, setShoppingList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showShoppingList, setShowShoppingList] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [mealName, setMealName] = useState("");
-  const [ingredientInput, setIngredientInput] = useState("");
-  const [ingredients, setIngredients] = useState([]);
-  const [saving, setSaving] = useState(false);
 
   const fetchWeeklyPlan = useCallback(async () => {
     try {
@@ -72,78 +246,33 @@ function App() {
     return slot?.meal || null;
   };
 
-  const openMealDialog = (day, mealType) => {
-    const existingMeal = getMealForSlot(day, mealType);
-    setSelectedSlot({ day, mealType });
-    setMealName(existingMeal?.name || "");
-    setIngredients(existingMeal?.ingredients || []);
-    setIngredientInput("");
-    setDialogOpen(true);
-  };
-
-  const addIngredient = () => {
-    const trimmed = ingredientInput.trim();
-    if (trimmed && !ingredients.includes(trimmed)) {
-      setIngredients([...ingredients, trimmed]);
-      setIngredientInput("");
-    }
-  };
-
-  const removeIngredient = (index) => {
-    setIngredients(ingredients.filter((_, i) => i !== index));
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addIngredient();
-    }
-  };
-
-  const saveMeal = async () => {
-    if (!mealName.trim()) {
-      toast.error("Por favor, introduce un nombre para la comida");
-      return;
-    }
-
-    setSaving(true);
+  const saveMeal = async (day, mealType, mealData) => {
     try {
       await axios.put(`${API}/weekly-plan/slot`, {
-        day: selectedSlot.day,
-        meal_type: selectedSlot.mealType,
-        meal: {
-          name: mealName.trim(),
-          ingredients: ingredients,
-        },
+        day,
+        meal_type: mealType,
+        meal: mealData,
       });
-      toast.success("Comida guardada correctamente");
-      setDialogOpen(false);
-      fetchWeeklyPlan();
+      toast.success("Comida guardada");
+      await fetchWeeklyPlan();
     } catch (error) {
       console.error("Error saving meal:", error);
-      toast.error("Error al guardar la comida");
-    } finally {
-      setSaving(false);
+      toast.error("Error al guardar");
+      throw error;
     }
   };
 
-  const deleteMeal = async () => {
-    setSaving(true);
+  const deleteMeal = async (day, mealType) => {
     try {
       await axios.delete(`${API}/weekly-plan/slot`, {
-        params: {
-          day: selectedSlot.day,
-          meal_type: selectedSlot.mealType,
-        },
+        params: { day, meal_type: mealType },
       });
       toast.success("Comida eliminada");
-      setDialogOpen(false);
-      fetchWeeklyPlan();
+      await fetchWeeklyPlan();
     } catch (error) {
       console.error("Error deleting meal:", error);
-      toast.error("Error al eliminar la comida");
-    } finally {
-      setSaving(false);
+      toast.error("Error al eliminar");
+      throw error;
     }
   };
 
@@ -158,6 +287,45 @@ function App() {
     } catch (error) {
       console.error("Error resetting plan:", error);
       toast.error("Error al reiniciar el plan");
+    }
+  };
+
+  // Export functions
+  const exportAsJSON = async () => {
+    try {
+      const response = await axios.get(`${API}/export/json`);
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ketoflow_plan_${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Plan exportado como JSON");
+    } catch (error) {
+      console.error("Error exporting JSON:", error);
+      toast.error("Error al exportar");
+    }
+  };
+
+  const exportAsCSV = async () => {
+    try {
+      const response = await axios.get(`${API}/export/csv`);
+      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ketoflow_plan_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Plan exportado como CSV");
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast.error("Error al exportar");
     }
   };
 
@@ -178,7 +346,7 @@ function App() {
       
       {/* Header */}
       <header className="glass-header sticky top-0 z-40 border-b border-border/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
@@ -188,7 +356,7 @@ function App() {
                 KetoFlow
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button
                 data-testid="reset-week-btn"
                 variant="ghost"
@@ -197,15 +365,49 @@ function App() {
                 className="text-muted-foreground hover:text-foreground rounded-full"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Reiniciar
+                <span className="hidden sm:inline">Reiniciar</span>
               </Button>
+              
+              {/* Export Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    data-testid="export-btn"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Exportar</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-xl">
+                  <DropdownMenuItem 
+                    data-testid="export-json-btn"
+                    onClick={exportAsJSON}
+                    className="cursor-pointer"
+                  >
+                    <FileJson className="w-4 h-4 mr-2 text-primary" />
+                    Exportar como JSON
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    data-testid="export-csv-btn"
+                    onClick={exportAsCSV}
+                    className="cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
+                    Exportar como CSV
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 data-testid="shopping-list-btn"
                 onClick={() => setShowShoppingList(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-5"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                Lista de Compra
+                <span className="hidden sm:inline">Lista de Compra</span>
               </Button>
             </div>
           </div>
@@ -213,206 +415,71 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Intro */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-semibold text-foreground mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
+        <div className="mb-6">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-foreground mb-1" style={{ fontFamily: 'Outfit, sans-serif' }}>
             Tu Plan Semanal
           </h2>
-          <p className="text-muted-foreground">
-            Planifica tus comidas cetogénicas para toda la semana
+          <p className="text-muted-foreground text-sm">
+            Haz click en cualquier celda para editar directamente
           </p>
         </div>
 
-        {/* Weekly Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4" data-testid="weekly-grid">
-          {DAYS.map((day, dayIndex) => (
-            <div
-              key={day}
-              className={`flex flex-col gap-3 animate-fade-in stagger-${dayIndex + 1}`}
-              style={{ opacity: 0 }}
-            >
-              {/* Day Header */}
-              <div className="text-center py-3 bg-primary/10 rounded-xl">
-                <span className="text-sm font-bold uppercase tracking-widest text-primary" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                  {day}
-                </span>
-              </div>
-
-              {/* Meal Slots */}
-              {MEAL_TYPES.map(({ key, label, icon: Icon }) => {
-                const meal = getMealForSlot(dayIndex, key);
-                return (
-                  <Card
-                    key={`${dayIndex}-${key}`}
-                    data-testid={`meal-slot-${dayIndex}-${key}`}
-                    onClick={() => openMealDialog(dayIndex, key)}
-                    className={`cursor-pointer transition-all duration-300 ${
-                      meal
-                        ? "meal-slot-filled card-hover"
-                        : "meal-slot-empty bg-transparent"
-                    } min-h-[120px] rounded-xl`}
-                  >
-                    <CardContent className="p-4 h-full flex flex-col">
-                      {/* Meal Type Header */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon className={`w-4 h-4 ${meal ? "text-primary" : "text-muted-foreground"}`} />
-                        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {/* Weekly Table */}
+        <Card className="rounded-2xl border-border/50 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse" data-testid="weekly-table">
+              <thead>
+                <tr className="bg-primary/10">
+                  <th className="p-3 text-left text-xs font-bold uppercase tracking-widest text-primary border-b border-border/30 min-w-[80px]">
+                    Comida
+                  </th>
+                  {DAYS.map((day, idx) => (
+                    <th
+                      key={day}
+                      className="p-3 text-center text-xs font-bold uppercase tracking-widest text-primary border-b border-border/30 min-w-[140px]"
+                      style={{ fontFamily: 'Outfit, sans-serif' }}
+                    >
+                      {day}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {MEAL_TYPES.map(({ key, label, icon: Icon }) => (
+                  <tr key={key} className="border-b border-border/20 last:border-b-0">
+                    <td className="p-3 bg-muted/30 border-r border-border/20">
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           {label}
                         </span>
                       </div>
+                    </td>
+                    {DAYS.map((_, dayIndex) => (
+                      <td key={`${dayIndex}-${key}`} className="p-2 border-r border-border/10 last:border-r-0">
+                        <EditableCell
+                          day={dayIndex}
+                          mealType={key}
+                          meal={getMealForSlot(dayIndex, key)}
+                          onSave={saveMeal}
+                          onDelete={deleteMeal}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
 
-                      {meal ? (
-                        /* Filled State */
-                        <div className="flex-1 flex flex-col">
-                          <h4 className="font-semibold text-foreground text-sm mb-2 line-clamp-2">
-                            {meal.name}
-                          </h4>
-                          {meal.ingredients.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-auto">
-                              {meal.ingredients.slice(0, 3).map((ing, i) => (
-                                <Badge
-                                  key={i}
-                                  variant="secondary"
-                                  className="text-xs bg-accent/30 text-accent-foreground border-0"
-                                >
-                                  {ing}
-                                </Badge>
-                              ))}
-                              {meal.ingredients.length > 3 && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-xs bg-muted text-muted-foreground border-0"
-                                >
-                                  +{meal.ingredients.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        /* Empty State */
-                        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
-                          <Plus className="w-6 h-6 mb-1 opacity-50" />
-                          <span className="text-xs">Añadir</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ))}
+        {/* Instructions */}
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          <p>💡 Pulsa <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Enter</kbd> para guardar · <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Esc</kbd> para cancelar</p>
         </div>
       </main>
-
-      {/* Meal Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              {selectedSlot && getMealForSlot(selectedSlot.day, selectedSlot.mealType)
-                ? "Editar Comida"
-                : "Añadir Comida"}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedSlot && `${DAYS[selectedSlot.day]} - ${MEAL_TYPES.find(m => m.key === selectedSlot.mealType)?.label}`}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Meal Name */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Nombre de la comida
-              </label>
-              <Input
-                data-testid="meal-name-input"
-                placeholder="Ej: Huevos revueltos con aguacate"
-                value={mealName}
-                onChange={(e) => setMealName(e.target.value)}
-                className="rounded-xl h-12"
-              />
-            </div>
-
-            {/* Ingredients */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Ingredientes
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  data-testid="ingredient-input"
-                  placeholder="Añadir ingrediente..."
-                  value={ingredientInput}
-                  onChange={(e) => setIngredientInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="rounded-xl h-12 flex-1"
-                />
-                <Button
-                  data-testid="add-ingredient-btn"
-                  type="button"
-                  onClick={addIngredient}
-                  variant="secondary"
-                  className="rounded-full h-12 px-4"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Ingredient Tags */}
-              {ingredients.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {ingredients.map((ing, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="pl-3 pr-1 py-1.5 bg-accent/30 text-accent-foreground border-0 rounded-full flex items-center gap-1"
-                    >
-                      {ing}
-                      <button
-                        data-testid={`remove-ingredient-${index}`}
-                        onClick={() => removeIngredient(index)}
-                        className="ml-1 hover:bg-destructive/20 rounded-full p-0.5 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            {selectedSlot && getMealForSlot(selectedSlot.day, selectedSlot.mealType) && (
-              <Button
-                data-testid="delete-meal-btn"
-                variant="destructive"
-                onClick={deleteMeal}
-                disabled={saving}
-                className="rounded-full"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Eliminar
-              </Button>
-            )}
-            <Button
-              data-testid="save-meal-btn"
-              onClick={saveMeal}
-              disabled={saving}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Check className="w-4 h-4 mr-2" />
-              )}
-              Guardar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Shopping List Dialog */}
       <Dialog open={showShoppingList} onOpenChange={setShowShoppingList}>
