@@ -82,7 +82,7 @@ async def get_weekly_plan():
         # Create initial empty plan
         new_plan = create_empty_weekly_plan()
         plan_dict = new_plan.model_dump()
-        await db.weekly_plans.insert_one(plan_dict)
+        await db.weekly_plans.insert_one(plan_dict.copy())
         return plan_dict
     return plan
 
@@ -92,7 +92,7 @@ async def update_meal_slot(request: UpdateMealSlotRequest):
     if not plan:
         new_plan = create_empty_weekly_plan()
         plan = new_plan.model_dump()
-        await db.weekly_plans.insert_one(plan)
+        await db.weekly_plans.insert_one(plan.copy())
     
     # Find and update the specific slot
     slots = plan.get("slots", [])
@@ -147,7 +147,7 @@ async def reset_weekly_plan():
     await db.weekly_plans.delete_many({})
     new_plan = create_empty_weekly_plan()
     plan_dict = new_plan.model_dump()
-    await db.weekly_plans.insert_one(plan_dict)
+    await db.weekly_plans.insert_one(plan_dict.copy())
     return {"message": "Plan semanal reiniciado", "plan": plan_dict}
 
 @api_router.get("/shopping-list", response_model=List[ShoppingItem])
