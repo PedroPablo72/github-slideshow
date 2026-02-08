@@ -439,6 +439,7 @@ class KetoMealPlannerTester:
             self.test_get_weekly_plan_with_meal,
             self.test_reset_weekly_plan,
             self.test_verify_plan_reset,
+            self.test_setup_clean_state,
             self.test_empty_shopping_list,
             
             # Shopping List functionality tests
