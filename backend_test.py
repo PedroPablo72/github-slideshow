@@ -227,6 +227,174 @@ class KetoMealPlannerTester:
                 return False, response
         return success, response
 
+    def test_add_ingredients_to_shopping_list(self):
+        """Test adding ingredients directly to shopping list"""
+        ingredients_data = {
+            "ingredients": ["pollo", "brócoli", "aceite de oliva", "sal"]
+        }
+        success, response = self.run_test("Add Ingredients to Shopping List", "POST", "shopping-list/add", 200, data=ingredients_data)
+        if success and response:
+            if 'added' in response and len(response['added']) == 4:
+                print("   ✅ 4 ingredients added successfully")
+                return True, response
+            else:
+                print(f"   ❌ Addition response invalid: {response}")
+                return False, response
+        return success, response
+
+    def test_verify_shopping_list_has_items(self):
+        """Test shopping list contains added items"""
+        success, response = self.run_test("Verify Shopping List Has Items", "GET", "shopping-list", 200)
+        if success and response:
+            if isinstance(response, list) and len(response) == 4:
+                print(f"   ✅ Shopping list has {len(response)} items")
+                # Print items for verification
+                items = [item.get('name', '') for item in response if isinstance(item, dict)]
+                print(f"   Items: {items}")
+                return True, response
+            else:
+                print(f"   ❌ Shopping list wrong count: {len(response) if isinstance(response, list) else 'not list'}")
+                return False, response
+        return success, response
+
+    def test_add_duplicate_ingredients(self):
+        """Test adding duplicate ingredients (should increment count)"""
+        ingredients_data = {
+            "ingredients": ["pollo", "brócoli"]  # These should increment count
+        }
+        success, response = self.run_test("Add Duplicate Ingredients", "POST", "shopping-list/add", 200, data=ingredients_data)
+        if success and response:
+            if 'added' in response and len(response['added']) == 2:
+                print("   ✅ Duplicate ingredients processed")
+                return True, response
+            else:
+                print(f"   ❌ Duplicate addition response invalid: {response}")
+                return False, response
+        return success, response
+
+    def test_verify_incremented_counts(self):
+        """Test that duplicate ingredients have incremented counts"""
+        success, response = self.run_test("Verify Incremented Counts", "GET", "shopping-list", 200)
+        if success and response:
+            if isinstance(response, list) and len(response) == 4:
+                # Find chicken and broccoli items to check their counts
+                pollo_item = next((item for item in response if item.get('name', '').lower() == 'pollo'), None)
+                brocoli_item = next((item for item in response if item.get('name', '').lower() == 'brócoli'), None)
+                
+                if pollo_item and pollo_item.get('count') == 2 and brocoli_item and brocoli_item.get('count') == 2:
+                    print("   ✅ Duplicate ingredients have correct counts (x2)")
+                    return True, response
+                else:
+                    print(f"   ❌ Count increments incorrect - Pollo: {pollo_item}, Brócoli: {brocoli_item}")
+                    return False, response
+            else:
+                print(f"   ❌ Shopping list count changed: {len(response) if isinstance(response, list) else 'not list'}")
+                return False, response
+        return success, response
+
+    def test_toggle_shopping_item(self):
+        """Test toggling an item's checked status"""
+        # Toggle first item
+        params = {"name": "Pollo"}
+        success, response = self.run_test("Toggle Shopping Item", "PUT", "shopping-list/toggle", 200, params=params)
+        if success and response:
+            if 'checked' in response:
+                print(f"   ✅ Item toggled - checked: {response['checked']}")
+                return True, response
+            else:
+                print(f"   ❌ Toggle response invalid: {response}")
+                return False, response
+        return success, response
+
+    def test_verify_item_toggled(self):
+        """Test that item was actually toggled"""
+        success, response = self.run_test("Verify Item Toggled", "GET", "shopping-list", 200)
+        if success and response:
+            if isinstance(response, list):
+                pollo_item = next((item for item in response if item.get('name', '').lower() == 'pollo'), None)
+                if pollo_item and pollo_item.get('checked') == True:
+                    print("   ✅ Item is now checked")
+                    return True, response
+                else:
+                    print(f"   ❌ Item not properly toggled: {pollo_item}")
+                    return False, response
+            else:
+                print(f"   ❌ Shopping list response invalid")
+                return False, response
+        return success, response
+
+    def test_remove_individual_item(self):
+        """Test removing individual item from shopping list"""
+        params = {"name": "Brócoli"}
+        success, response = self.run_test("Remove Individual Item", "DELETE", "shopping-list/item", 200, params=params)
+        if success and response:
+            if 'message' in response and 'eliminado' in response['message']:
+                print("   ✅ Item removed successfully")
+                return True, response
+            else:
+                print(f"   ❌ Remove response invalid: {response}")
+                return False, response
+        return success, response
+
+    def test_verify_item_removed(self):
+        """Test that item was actually removed"""
+        success, response = self.run_test("Verify Item Removed", "GET", "shopping-list", 200)
+        if success and response:
+            if isinstance(response, list) and len(response) == 3:
+                # Check brócoli is no longer in list
+                brocoli_item = next((item for item in response if 'brócoli' in item.get('name', '').lower()), None)
+                if brocoli_item is None:
+                    print("   ✅ Brócoli successfully removed from list")
+                    return True, response
+                else:
+                    print(f"   ❌ Brócoli still in list: {brocoli_item}")
+                    return False, response
+            else:
+                print(f"   ❌ Shopping list count incorrect: {len(response) if isinstance(response, list) else 'not list'}")
+                return False, response
+        return success, response
+
+    def test_clear_shopping_list(self):
+        """Test clearing entire shopping list"""
+        success, response = self.run_test("Clear Shopping List", "DELETE", "shopping-list/clear", 200)
+        if success and response:
+            if 'message' in response and 'vaciada' in response['message']:
+                print("   ✅ Shopping list cleared")
+                return True, response
+            else:
+                print(f"   ❌ Clear response invalid: {response}")
+                return False, response
+        return success, response
+
+    def test_verify_list_cleared(self):
+        """Test that shopping list is actually empty"""
+        success, response = self.run_test("Verify List Cleared", "GET", "shopping-list", 200)
+        if success and response:
+            if isinstance(response, list) and len(response) == 0:
+                print("   ✅ Shopping list is completely empty")
+                return True, response
+            else:
+                print(f"   ❌ Shopping list not empty: {response}")
+                return False, response
+        return success, response
+
+    def test_export_json(self):
+        """Test JSON export functionality"""
+        success, response = self.run_test("Export JSON", "GET", "export/json", 200)
+        if success and response:
+            if 'weekly_plan' in response and 'export_date' in response:
+                print("   ✅ JSON export successful")
+                return True, response
+            else:
+                print(f"   ❌ JSON export structure invalid: {list(response.keys()) if isinstance(response, dict) else response}")
+                return False, response
+        return success, response
+
+    def test_export_csv(self):
+        """Test CSV export functionality"""
+        success, _ = self.run_test("Export CSV", "GET", "export/csv", 200)
+        return success, {}
+
     def run_all_tests(self):
         """Run complete test suite"""
         print("🚀 Starting Keto Meal Planner API Tests")
