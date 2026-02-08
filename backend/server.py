@@ -285,6 +285,62 @@ async def clear_shopping_list():
     await db.shopping_list.delete_many({})
     return {"message": "Lista vaciada"}
 
+@api_router.get("/shopping-list/export/text", response_class=PlainTextResponse)
+async def export_shopping_list_text():
+    """Export shopping list as plain text for sharing"""
+    items = await db.shopping_list.find({}, {"_id": 0}).to_list(1000)
+    if not items:
+        return "Lista de compra vacía"
+    
+    lines = ["🥑 LISTA DE COMPRA - KetoFlow", "=" * 30, ""]
+    
+    pending = [item for item in items if not item.get("checked", False)]
+    checked = [item for item in items if item.get("checked", False)]
+    
+    if pending:
+        lines.append("📋 PENDIENTES:")
+        for item in pending:
+            count = f" (x{item['count']})" if item.get('count', 1) > 1 else ""
+            lines.append(f"  ○ {item['name']}{count}")
+        lines.append("")
+    
+    if checked:
+        lines.append("✅ COMPRADOS:")
+        for item in checked:
+            count = f" (x{item['count']})" if item.get('count', 1) > 1 else ""
+            lines.append(f"  ✓ {item['name']}{count}")
+        lines.append("")
+    
+    lines.append("=" * 30)
+    lines.append(f"Total: {len(pending)} pendientes, {len(checked)} comprados")
+    
+    return "\n".join(lines)
+
+@api_router.get("/shopping-list/export/whatsapp")
+async def export_shopping_list_whatsapp():
+    """Export shopping list formatted for WhatsApp sharing"""
+    items = await db.shopping_list.find({}, {"_id": 0}).to_list(1000)
+    if not items:
+        return {"text": "Lista de compra vacía", "url": ""}
+    
+    lines = ["*🥑 LISTA DE COMPRA*", ""]
+    
+    pending = [item for item in items if not item.get("checked", False)]
+    
+    if pending:
+        for item in pending:
+            count = f" (x{item['count']})" if item.get('count', 1) > 1 else ""
+            lines.append(f"☐ {item['name']}{count}")
+    else:
+        lines.append("✅ ¡Todo comprado!")
+    
+    text = "\n".join(lines)
+    # URL encode for WhatsApp
+    import urllib.parse
+    whatsapp_url = f"https://wa.me/?text={urllib.parse.quote(text)}"
+    
+    return {"text": text, "url": whatsapp_url}
+
 # Include the router in the main app
 app.include_router(api_router)
 
