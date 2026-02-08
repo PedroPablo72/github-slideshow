@@ -346,6 +346,69 @@ function App() {
     }
   };
 
+  const copyShoppingList = async () => {
+    try {
+      const response = await axios.get(`${API}/shopping-list/export/text`);
+      await navigator.clipboard.writeText(response.data);
+      toast.success("Lista copiada al portapapeles");
+    } catch (error) {
+      console.error("Error copying list:", error);
+      toast.error("Error al copiar");
+    }
+  };
+
+  const downloadShoppingList = async () => {
+    try {
+      const response = await axios.get(`${API}/shopping-list/export/text`);
+      const blob = new Blob([response.data], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `lista_compra_${new Date().toISOString().split("T")[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Lista descargada");
+    } catch (error) {
+      console.error("Error downloading list:", error);
+      toast.error("Error al descargar");
+    }
+  };
+
+  const shareWhatsApp = async () => {
+    try {
+      const response = await axios.get(`${API}/shopping-list/export/whatsapp`);
+      if (response.data.url) {
+        window.open(response.data.url, "_blank");
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+      toast.error("Error al compartir");
+    }
+  };
+
+  const shareNative = async () => {
+    try {
+      const response = await axios.get(`${API}/shopping-list/export/text`);
+      if (navigator.share) {
+        await navigator.share({
+          title: "Lista de Compra - KetoFlow",
+          text: response.data,
+        });
+      } else {
+        // Fallback to copy
+        await navigator.clipboard.writeText(response.data);
+        toast.success("Lista copiada al portapapeles");
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Error sharing:", error);
+        toast.error("Error al compartir");
+      }
+    }
+  };
+
   const resetWeek = async () => {
     if (!window.confirm("¿Estás seguro de que quieres reiniciar toda la semana?")) {
       return;
